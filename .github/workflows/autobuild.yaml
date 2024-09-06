@@ -97,32 +97,32 @@ jobs:
       fail-fast: false
       matrix:
         config:
-#        - name: windows
-#          os: windows-2019
-#          preinstall: choco install ninja nasm
-#          vcvars: C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat
-#          cflags: /O2 /DNDEBUG
-#          cmake: >-
-#            "-DCMAKE_C_COMPILER=cl"
-#            "-DCMAKE_CXX_COMPILER=cl"
-#            "-DLLVM_ENABLE_ZLIB=OFF"
-#            "-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded"
-#          grpc_cmake: >-
-#            "-DgRPC_MSVC_STATIC_RUNTIME=ON"
-#          binary_extension: ".exe"
-#        - name: mac
-#          os: macos-12
-#          preinstall: brew install ninja zlib p7zip
-#          cflags: -O3 -gline-tables-only -DNDEBUG
-#          cmake: >-
-#            "-DCMAKE_C_COMPILER=clang"
-#            "-DCMAKE_CXX_COMPILER=clang++"
-#            "-DLLVM_ENABLE_ZLIB=FORCE_ON"
-#            "-DCMAKE_OSX_ARCHITECTURES=x86_64;arm64"
-#            "-DCMAKE_OSX_DEPLOYMENT_TARGET=10.9"
-#          # BoringSSL doesn't support universal binaries when building with ASM.
-#          grpc_cmake: >-
-#            "-DOPENSSL_NO_ASM=ON"
+        - name: windows
+          os: windows-2019
+          preinstall: choco install ninja nasm
+          vcvars: C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat
+          cflags: /O2 /DNDEBUG
+          cmake: >-
+            "-DCMAKE_C_COMPILER=cl"
+            "-DCMAKE_CXX_COMPILER=cl"
+            "-DLLVM_ENABLE_ZLIB=OFF"
+            "-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded"
+          grpc_cmake: >-
+            "-DgRPC_MSVC_STATIC_RUNTIME=ON"
+          binary_extension: ".exe"
+        - name: mac
+          os: macos-12
+          preinstall: brew install ninja zlib p7zip
+          cflags: -O3 -gline-tables-only -DNDEBUG
+          cmake: >-
+            "-DCMAKE_C_COMPILER=clang"
+            "-DCMAKE_CXX_COMPILER=clang++"
+            "-DLLVM_ENABLE_ZLIB=FORCE_ON"
+            "-DCMAKE_OSX_ARCHITECTURES=x86_64;arm64"
+            "-DCMAKE_OSX_DEPLOYMENT_TARGET=10.9"
+          # BoringSSL doesn't support universal binaries when building with ASM.
+          grpc_cmake: >-
+            "-DOPENSSL_NO_ASM=ON"
         - name: linux
           os: ubuntu-latest
           container: ubuntu:18.04
@@ -243,8 +243,8 @@ jobs:
         ${{ matrix.config.cmake }}
     - name: Ninja
       run: >
-        ninja -C ${{ env.CLANGD_DIR }} clangd #clangd-indexer clangd-index-server
-        # clangd-index-server-monitor
+        ninja -C ${{ env.CLANGD_DIR }} clangd clangd-indexer clangd-index-server
+        clangd-index-server-monitor
     - name: Install OpenMP headers
       shell: bash
       run: >
@@ -256,14 +256,14 @@ jobs:
         ${{ env.CLANGD_DIR }}/LICENSE.TXT
         ${{ env.CLANGD_DIR }}/bin/clangd${{ matrix.config.binary_extension }}
         ${{ env.CLANGD_DIR }}/lib/clang
-#     - name: Archive indexing-tools
-#       run: >
-#         7z a indexing-tools.zip
-#         ${{ env.CLANGD_DIR }}/LICENSE.TXT
-#         ${{ env.CLANGD_DIR }}/bin/clangd-indexer${{ matrix.config.binary_extension }}
-#         ${{ env.CLANGD_DIR }}/bin/clangd-index-server${{ matrix.config.binary_extension }}
-#         ${{ env.CLANGD_DIR }}/bin/clangd-index-server-monitor${{ matrix.config.binary_extension }}
-#         ${{ env.CLANGD_DIR }}/lib/clang
+    - name: Archive indexing-tools
+      run: >
+        7z a indexing-tools.zip
+        ${{ env.CLANGD_DIR }}/LICENSE.TXT
+        ${{ env.CLANGD_DIR }}/bin/clangd-indexer${{ matrix.config.binary_extension }}
+        ${{ env.CLANGD_DIR }}/bin/clangd-index-server${{ matrix.config.binary_extension }}
+        ${{ env.CLANGD_DIR }}/bin/clangd-index-server-monitor${{ matrix.config.binary_extension }}
+        ${{ env.CLANGD_DIR }}/lib/clang
     - name: Upload clangd asset
       uses: actions/upload-release-asset@v1.0.1
       env:
@@ -273,15 +273,15 @@ jobs:
         asset_name: clangd-${{ matrix.config.name }}-${{ env.TAG_NAME }}.zip
         asset_path: clangd.zip
         asset_content_type: application/zip
-#     - name: Upload indexing-tools asset
-#       uses: actions/upload-release-asset@v1.0.1
-#       env:
-#         GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-#       with:
-#         upload_url: ${{ env.UPLOAD_URL }}
-#         asset_name: clangd_indexing_tools-${{ matrix.config.name }}-${{ env.TAG_NAME }}.zip
-#         asset_path: indexing-tools.zip
-#         asset_content_type: application/zip
+    - name: Upload indexing-tools asset
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+      with:
+        upload_url: ${{ env.UPLOAD_URL }}
+        asset_name: clangd_indexing_tools-${{ matrix.config.name }}-${{ env.TAG_NAME }}.zip
+        asset_path: indexing-tools.zip
+        asset_content_type: application/zip
     - name: Check binary compatibility
       if: matrix.config.name == 'linux'
       run: .github/workflows/lib_compat_test.py --lib=GLIBC_2.18 "$CLANGD_DIR/bin/clangd"
